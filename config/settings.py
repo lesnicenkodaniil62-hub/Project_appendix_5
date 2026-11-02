@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     # Наши приложения
     "users",
     "materials",
-
 ]
 
 MIDDLEWARE = [
