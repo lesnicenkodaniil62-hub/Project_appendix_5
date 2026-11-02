@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import cast
+
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
@@ -5,17 +9,17 @@ from django.db import models
 class CustomUserManager(BaseUserManager):
     """Кастомный менеджер для модели пользователя с авторизацией по email."""
 
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email: str, password: str | None = None, **extra_fields) -> User:
         """Создаёт и возвращает обычного пользователя с email и паролем."""
         if not email:
             raise ValueError("Пользователь должен иметь email-адрес")
         email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        user = cast(User, self.model(email=email, **extra_fields))
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(self, email: str, password: str | None = None, **extra_fields) -> User:
         """Создаёт и возвращает суперпользователя с email и паролем."""
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
