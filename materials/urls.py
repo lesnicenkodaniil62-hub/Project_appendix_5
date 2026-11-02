@@ -1,4 +1,4 @@
-from django.urls import URLPattern, URLResolver, include, path
+from django.urls import URLPattern, URLResolver, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (

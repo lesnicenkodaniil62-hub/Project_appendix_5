@@ -22,4 +22,5 @@ from django.urls import URLPattern, URLResolver, include, path
 urlpatterns: list[URLPattern | URLResolver] = [
     path("admin/", admin.site.urls),
     path("api/", include("materials.urls")),
+    path("api/", include("users.urls")),  # ← ДОБАВЬТЕ ЭТУ СТРОКУ
 ]
