@@ -101,3 +101,64 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.email
+
+
+class Payment(models.Model):
+    """Модель платежа за курс или урок."""
+
+    PAYMENT_METHOD_CHOICES = [
+        ("cash", "Наличные"),
+        ("transfer", "Перевод на счет"),
+    ]
+
+    user = models.ForeignKey(
+        "users.User",
+        on_delete=models.CASCADE,
+        related_name="payments",
+        verbose_name="Пользователь",
+        help_text="Пользователь, совершивший платеж",
+    )
+    payment_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата оплаты",
+    )
+    course = models.ForeignKey(
+        "materials.Course",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+        verbose_name="Оплаченный курс",
+        help_text="Курс, который был оплачен",
+    )
+    lesson = models.ForeignKey(
+        "materials.Lesson",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+        verbose_name="Оплаченный урок",
+        help_text="Урок, который был оплачен",
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Сумма оплаты",
+        help_text="Сумма платежа",
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default="transfer",
+        verbose_name="Способ оплаты",
+        help_text="Выберите способ оплаты",
+    )
+
+    class Meta:
+        verbose_name = "Платеж"
+        verbose_name_plural = "Платежи"
+        ordering = ["-payment_date"]
+
+    def __str__(self) -> str:
+        paid_item = self.course.title if self.course else self.lesson.title if self.lesson else "Не указано"
+        return f"Платеж {self.amount} руб. от {self.user.email} за {paid_item}"
