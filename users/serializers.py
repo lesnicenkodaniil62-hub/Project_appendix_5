@@ -21,12 +21,51 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "date_joined")
 
 
+class UserRegisterSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации нового пользователя."""
+
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "password",
+            "password_confirm",
+            "first_name",
+            "last_name",
+            "phone",
+            "city",
+            "avatar",
+        )
+
+    def validate_email(self, value):
+        """Проверяет уникальность email."""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Пользователь с таким email уже существует")
+        return value
+
+    def validate(self, attrs):
+        """Проверяет совпадение паролей."""
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Пароли не совпадают"})
+        return attrs
+
+    def create(self, validated_data):
+        """Создаёт пользователя с хешированным паролем."""
+        validated_data.pop("password_confirm")
+        password = validated_data.pop("password")
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Payment с расширенной информацией."""
 
-    # Расширяем: показываем название курса вместо ID
     course_title = serializers.CharField(source="course.title", read_only=True, default=None)
-    # Расширяем: показываем название урока вместо ID
     lesson_title = serializers.CharField(source="lesson.title", read_only=True, default=None)
 
     class Meta:
@@ -47,7 +86,6 @@ class PaymentSerializer(serializers.ModelSerializer):
 class UserWithPaymentsSerializer(serializers.ModelSerializer):
     """Сериализатор для профиля пользователя с историей платежей."""
 
-    # Вложенные платежи с расширенной информацией
     payments = PaymentSerializer(many=True, read_only=True)
 
     class Meta:

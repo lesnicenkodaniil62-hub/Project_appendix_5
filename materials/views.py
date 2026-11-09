@@ -1,4 +1,5 @@
-from rest_framework import generics, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, permissions, viewsets
 
 from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer
@@ -9,6 +10,11 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = [permissions.IsAuthenticated]  # ← Добавлено
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ["owner", "title"]
+    ordering_fields = ["id", "title"]
+    ordering = ["-id"]
 
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
@@ -16,24 +22,26 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
 
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [permissions.IsAuthenticated]  # ← Добавлено
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ["course", "title"]
+    ordering_fields = ["id", "title"]
+    ordering = ["id"]
 
 
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
-    """Generic-класс для получения одного урока."""
-
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [permissions.IsAuthenticated]  # ← Добавлено
 
 
 class LessonUpdateAPIView(generics.UpdateAPIView):
-    """Generic-класс для обновления урока."""
-
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [permissions.IsAuthenticated]  # ← Добавлено
 
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
-    """Generic-класс для удаления урока."""
-
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [permissions.IsAuthenticated]  # ← Добавлено
