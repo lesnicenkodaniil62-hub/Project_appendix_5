@@ -74,6 +74,16 @@ class Lesson(models.Model):
         verbose_name="Курс",
         help_text="Курс, к которому относится урок",
     )
+    # НОВОЕ ПОЛЕ: владелец урока
+    owner = models.ForeignKey(
+        "users.User",
+        on_delete=models.CASCADE,
+        related_name="lessons",
+        verbose_name="Владелец",
+        help_text="Пользователь, создавший урок",
+        null=True,  # Временно разрешаем null для существующих записей
+        blank=True,
+    )
 
     class Meta:
         verbose_name = "Урок"
