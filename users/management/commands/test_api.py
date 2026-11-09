@@ -8,7 +8,7 @@ from users.models import Payment, User
 
 
 class Command(BaseCommand):
-    help = "Комплексное тестирование всех эндпоинтов проекта (feature_1, feature_2, feature_3)"
+    help = "Комплексное тестирование всех эндпоинтов (feature_1, feature_2, feature_3)"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,19 +70,29 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\n📦 Подготовка тестовых данных..."))
 
         # Создаём группу "Модераторы"
-        moderator_group, _ = Group.objects.get_or_create(name="Модераторы")
+        Group.objects.get_or_create(name="Модераторы")
 
         # Создаём обычного пользователя
         self.user1, created = User.objects.get_or_create(
-            email="user1@test.com", defaults={"first_name": "Обычный", "last_name": "Пользователь1", "is_active": True}
+            email="user1@test.com",
+            defaults={
+                "first_name": "Обычный",
+                "last_name": "Пользователь1",
+                "is_active": True,
+            },
         )
         if created:
             self.user1.set_password("testpass123")
             self.user1.save()
 
-        # Создаём второго обычного пользователя (для тестов "чужой профиль")
+        # Создаём второго обычного пользователя
         self.user2, created = User.objects.get_or_create(
-            email="user2@test.com", defaults={"first_name": "Обычный", "last_name": "Пользователь2", "is_active": True}
+            email="user2@test.com",
+            defaults={
+                "first_name": "Обычный",
+                "last_name": "Пользователь2",
+                "is_active": True,
+            },
         )
         if created:
             self.user2.set_password("testpass123")
@@ -91,11 +101,16 @@ class Command(BaseCommand):
         # Создаём модератора
         self.moderator, created = User.objects.get_or_create(
             email="moderator@test.com",
-            defaults={"first_name": "Модератор", "last_name": "Тестовый", "is_active": True},
+            defaults={
+                "first_name": "Модератор",
+                "last_name": "Тестовый",
+                "is_active": True,
+            },
         )
         if created:
             self.moderator.set_password("testpass123")
             self.moderator.save()
+        moderator_group = Group.objects.get(name="Модераторы")
         self.moderator.groups.add(moderator_group)
 
         # Создаём курс и урок для user1
@@ -118,7 +133,7 @@ class Command(BaseCommand):
             },
         )
 
-        # Создаём курс и урок для user2 (для тестов "чужие объекты")
+        # Создаём курс и урок для user2
         self.course2, _ = Course.objects.get_or_create(
             id=200,
             defaults={
@@ -139,7 +154,7 @@ class Command(BaseCommand):
         )
 
         # Создаём платёж
-        self.payment1, _ = Payment.objects.get_or_create(
+        Payment.objects.get_or_create(
             id=100,
             defaults={
                 "user": self.user1,
@@ -208,7 +223,7 @@ class Command(BaseCommand):
         )
 
     def _test_feature_2(self):
-        """Тесты для feature_2: lessons_count, платежи, фильтрация, профиль с платежами."""
+        """Тесты для feature_2: lessons_count, платежи, фильтрация, профиль."""
         self.stdout.write(self.style.SUCCESS("\n🧪 ТЕСТИРОВАНИЕ FEATURE_2\n"))
         self.stdout.write("-" * 60)
 
@@ -249,7 +264,7 @@ class Command(BaseCommand):
             f"Ожидался 200, получен {response.status_code}",
         )
 
-        response = self.client.get("/users/payments/?course=" + str(self.course1.id))
+        response = self.client.get(f"/users/payments/?course={self.course1.id}")
         self._assert(
             response.status_code == status.HTTP_200_OK,
             "Фильтр по курсу (?course=)",
@@ -287,13 +302,13 @@ class Command(BaseCommand):
             self._assert(False, "Профиль с платежами", f"Ошибка: {response.status_code}")
 
     def _test_feature_3(self):
-        """Тесты для feature_3: регистрация, JWT, permissions, модераторы, профили."""
+        """Тесты для feature_3: регистрация, JWT, permissions, модераторы."""
         self.stdout.write(self.style.SUCCESS("\n🧪 ТЕСТИРОВАНИЕ FEATURE_3\n"))
         self.stdout.write("-" * 60)
 
         # Регистрация
         self.stdout.write(self.style.SUCCESS("\n📝 Регистрация:"))
-        self.client.force_authenticate(user=None)  # Сбрасываем аутентификацию
+        self.client.force_authenticate(user=None)
         response = self.client.post(
             "/users/register/",
             {
@@ -304,17 +319,19 @@ class Command(BaseCommand):
                 "last_name": "Пользователь",
             },
         )
+
+        response_data = response.data if hasattr(response, "data") else response.content
         self._assert(
             response.status_code == status.HTTP_201_CREATED,
             "POST /users/register/ — успешная регистрация",
-            f"Ожидался 201, получен {response.status_code}. Ответ: {response.data if hasattr(response, 'data') else response.content}",
+            f"Ожидался 201, получен {response.status_code}. Ответ: {response_data}",
         )
 
         # Проверка уникальности email
         response = self.client.post(
             "/users/register/",
             {
-                "email": "user1@test.com",  # Уже существует
+                "email": "user1@test.com",
                 "password": "testpass123",
                 "password_confirm": "testpass123",
                 "first_name": "Дубликат",
@@ -357,7 +374,11 @@ class Command(BaseCommand):
         self.client.force_authenticate(user=None)
         response = self.client.get("/materials/courses/")
         self._assert(
-            response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN],
+            response.status_code
+            in [
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_403_FORBIDDEN,
+            ],
             "GET /materials/courses/ без токена → 401/403",
             f"Ожидался 401/403, получен {response.status_code}",
         )
@@ -429,10 +450,12 @@ class Command(BaseCommand):
         response = self.client.get("/materials/courses/")
         if response.status_code == 200:
             course_ids = [c["id"] for c in response.data]
+            user2_visible = self.course2.id in course_ids
+            user1_visible = self.course1.id in course_ids
             self._assert(
-                self.course1.id in course_ids and self.course2.id not in course_ids,
+                user1_visible and not user2_visible,
                 "Обычный пользователь видит ТОЛЬКО свои курсы",
-                f"Виден курс user2: {self.course2.id in course_ids}",
+                f"Виден курс user2: {user2_visible}",
             )
         else:
             self._assert(False, "Проверка видимости курсов", f"Статус: {response.status_code}")
@@ -468,7 +491,7 @@ class Command(BaseCommand):
             self._assert(
                 no_last_name and no_payments,
                 "Чужой профиль БЕЗ last_name и payments",
-                f"last_name: {'last_name' in response.data}, payments: {'payments' in response.data}",
+                f"last_name: {'last_name' in response.data}, " f"payments: {'payments' in response.data}",
             )
         else:
             self._assert(False, "Чужой профиль", f"Статус: {response.status_code}")
@@ -500,9 +523,13 @@ class Command(BaseCommand):
         Course.objects.filter(id__in=[100, 200]).delete()
 
         # Удаляем пользователей
-        User.objects.filter(
-            email__in=["user1@test.com", "user2@test.com", "moderator@test.com", "newuser@test.com"]
-        ).delete()
+        test_emails = [
+            "user1@test.com",
+            "user2@test.com",
+            "moderator@test.com",
+            "newuser@test.com",
+        ]
+        User.objects.filter(email__in=test_emails).delete()
 
         # Удаляем группу
         Group.objects.filter(name="Модераторы").delete()

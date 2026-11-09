@@ -8,7 +8,9 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
-
+"""
+Django settings for config project.
+"""
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -26,7 +28,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.getenv("DEBUG") == "True" else False
 
-ALLOWED_HOSTS: list[str] = []
+# добавлен 'testserver' для работы Django Test Client
+ALLOWED_HOSTS: list[str] = ["testserver", "127.0.0.1", "localhost"]
 
 # Application definition
 INSTALLED_APPS = [
