@@ -18,9 +18,16 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import URLPattern, URLResolver, include, path
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("admin/", admin.site.urls),
-    path("api/materials/", include("materials.urls")),
-    path("api/", include("users.urls")),
+    path("materials/", include("materials.urls")),
+    path("users/", include("users.urls")),
+    # JWT эндпоинты (публичные)
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]

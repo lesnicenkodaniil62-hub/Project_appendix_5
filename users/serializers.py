@@ -4,7 +4,7 @@ from .models import Payment, User
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели User (редактирование профиля)."""
+    """Базовый сериализатор для модели User."""
 
     class Meta:
         model = User
@@ -62,6 +62,24 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+class UserProfilePublicSerializer(serializers.ModelSerializer):
+    """Публичный сериализатор для просмотра чужих профилей (без sensitive полей)."""
+
+    class Meta:
+        model = User
+        # Общая информация: БЕЗ last_name и payments
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "phone",
+            "city",
+            "avatar",
+            "date_joined",
+        )
+        read_only_fields = fields
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Payment с расширенной информацией."""
 
@@ -83,22 +101,24 @@ class PaymentSerializer(serializers.ModelSerializer):
         )
 
 
-class UserWithPaymentsSerializer(serializers.ModelSerializer):
-    """Сериализатор для профиля пользователя с историей платежей."""
+class UserProfilePrivateSerializer(serializers.ModelSerializer):
+    """Приватный сериализатор для просмотра СВОЕГО профиля (с полной информацией)."""
 
+    # Вложенные платежи — только для своего профиля
     payments = PaymentSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
+        # Полная информация: С last_name и payments
         fields = (
             "id",
             "email",
             "first_name",
-            "last_name",
+            "last_name",  # ← Есть только в приватном сериализаторе
             "phone",
             "city",
             "avatar",
             "date_joined",
-            "payments",
+            "payments",  # ← Есть только в приватном сериализаторе
         )
         read_only_fields = ("id", "date_joined")
