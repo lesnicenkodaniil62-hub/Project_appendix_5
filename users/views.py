@@ -19,11 +19,11 @@ class UserRegisterAPIView(generics.CreateAPIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """ViewSet для CRUD операций с пользователями (защищён авторизацией)."""
+    """ViewSet для CRUD операций с пользователями."""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]  # ← Только для авторизованных
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class UserProfileAPIView(generics.RetrieveAPIView):
@@ -31,7 +31,7 @@ class UserProfileAPIView(generics.RetrieveAPIView):
 
     queryset = User.objects.all()
     serializer_class = UserWithPaymentsSerializer
-    permission_classes = [permissions.IsAuthenticated]  # ← Только для авторизованных
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class UserUpdateAPIView(generics.UpdateAPIView):
@@ -39,7 +39,7 @@ class UserUpdateAPIView(generics.UpdateAPIView):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]  # ← Только для авторизованных
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class PaymentListAPIView(generics.ListAPIView):
@@ -47,7 +47,7 @@ class PaymentListAPIView(generics.ListAPIView):
 
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]  # ← Только для авторизованных
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["course", "lesson", "payment_method"]
     ordering_fields = ["payment_date"]
