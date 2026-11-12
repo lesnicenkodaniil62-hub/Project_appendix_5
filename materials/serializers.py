@@ -11,7 +11,7 @@ class LessonSerializer(serializers.ModelSerializer):
         validators=[validate_youtube_url],
         required=False,
         allow_null=True,
-        help_text="Ссылка должна вести на youtube.com"
+        help_text="Ссылка должна вести на youtube.com",
     )
 
     class Meta:

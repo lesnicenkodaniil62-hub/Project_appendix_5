@@ -14,8 +14,6 @@ def validate_youtube_url(value: str):
     # Проверяем, содержит ли сетевое расположение (netloc) youtube.com
     # (это покроет и www.youtube.com, и m.youtube.com)
     if "youtube.com" not in parsed_url.netloc:
-        raise serializers.ValidationError(
-            "Разрешены только ссылки на youtube.com. Сторонние ресурсы запрещены."
-        )
+        raise serializers.ValidationError("Разрешены только ссылки на youtube.com. Сторонние ресурсы запрещены.")
 
     return value

@@ -4,9 +4,10 @@ from rest_framework import filters, generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from users.permissions import IsModerator, IsNotModerator, IsOwner, IsOwnerOrModerator
+
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
-from users.permissions import IsModerator, IsNotModerator, IsOwner, IsOwnerOrModerator
 
 
 class CourseViewSet(viewsets.ModelViewSet):

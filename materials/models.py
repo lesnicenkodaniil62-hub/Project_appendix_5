@@ -93,6 +93,7 @@ class Lesson(models.Model):
     def __str__(self) -> str:
         return f"{self.title} (Курс: {self.course.title})"
 
+
 class Subscription(models.Model):
     """Модель подписки пользователя на курс."""
 
