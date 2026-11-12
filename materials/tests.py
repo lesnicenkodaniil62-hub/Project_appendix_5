@@ -2,8 +2,9 @@ from django.contrib.auth.models import Group
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Course, Lesson, Subscription
 from users.models import Payment, User
+
+from .models import Course, Lesson, Subscription
 
 
 class UserRegistrationTests(APITestCase):
@@ -345,9 +346,7 @@ class LessonCRUDTests(APITestCase):
         """Владелец может обновить свой урок."""
         self.client.force_authenticate(user=self.user)
         data = {"title": "Обновлённый урок"}
-        response = self.client.patch(
-            f"/materials/lessons/{self.lesson.id}/update/", data
-        )
+        response = self.client.patch(f"/materials/lessons/{self.lesson.id}/update/", data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_lesson_by_owner(self):
