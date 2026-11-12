@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from users.permissions import IsModerator, IsNotModerator, IsOwner, IsOwnerOrModerator
 
 from .models import Course, Lesson, Subscription
+from .paginators import MaterialsPagination
 from .serializers import CourseSerializer, LessonSerializer
 
 
@@ -15,6 +16,9 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    # ДОБАВЛЕН ПАГИНАТОР
+    pagination_class = MaterialsPagination
+
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["owner", "title"]
     ordering_fields = ["id", "title"]
@@ -40,6 +44,9 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
 
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    # ДОБАВЛЕН ПАГИНАТОР
+    pagination_class = MaterialsPagination
+
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["course", "title"]
     ordering_fields = ["id", "title"]
@@ -111,11 +118,9 @@ class SubscriptionAPIView(APIView):
         subs_item = Subscription.objects.filter(user=user, course=course)
 
         if subs_item.exists():
-            # Если подписка есть — удаляем её
             subs_item.delete()
             message = "подписка удалена"
         else:
-            # Если подписки нет — создаём её
             Subscription.objects.create(user=user, course=course)
             message = "подписка добавлена"
 
