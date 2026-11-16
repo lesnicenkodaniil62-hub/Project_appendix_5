@@ -1,5 +1,32 @@
+from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
+
+class CustomUserManager(BaseUserManager):
+    """Кастомный менеджер для модели User, где email является уникальным идентификатором."""
+
+    def create_user(self, email, password=None, **extra_fields):  # type: ignore[no-untyped-def]
+        """Создаёт и возвращает обычного пользователя."""
+        if not email:
+            raise ValueError("Поле Email должно быть заполнено")
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)  # type: ignore[attr-defined]
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):  # type: ignore[no-untyped-def]
+        """Создаёт и возвращает суперпользователя."""
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Суперпользователь должен иметь is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Суперпользователь должен иметь is_superuser=True.")
+
+        return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -35,6 +62,9 @@ class User(AbstractUser):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
+
+    # Переопределяем менеджер с подавлением ВСЕХ ошибок mypy на этой строке
+    objects = CustomUserManager()  # type: ignore
 
     class Meta:
         verbose_name = "Пользователь"
@@ -95,8 +125,6 @@ class Payment(models.Model):
         choices=PAYMENT_METHODS,
         verbose_name="Способ оплаты",
     )
-
-    # НОВЫЕ ПОЛЯ ДЛЯ STRIPE
     stripe_product_id = models.CharField(
         max_length=255,
         blank=True,
