@@ -41,19 +41,16 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         )
 
     def validate_email(self, value):
-        """Проверяет уникальность email."""
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Пользователь с таким email уже существует")
         return value
 
     def validate(self, attrs):
-        """Проверяет совпадение паролей."""
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError({"password_confirm": "Пароли не совпадают"})
         return attrs
 
     def create(self, validated_data):
-        """Создаёт пользователя с хешированным паролем."""
         validated_data.pop("password_confirm")
         password = validated_data.pop("password")
         user = User.objects.create(**validated_data)
@@ -63,11 +60,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 class UserProfilePublicSerializer(serializers.ModelSerializer):
-    """Публичный сериализатор для просмотра чужих профилей (без sensitive полей)."""
+    """Публичный сериализатор для просмотра чужих профилей."""
 
     class Meta:
         model = User
-        # Общая информация: БЕЗ last_name и payments
         fields = (
             "id",
             "email",
@@ -81,10 +77,18 @@ class UserProfilePublicSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели Payment с расширенной информацией."""
+    """Сериализатор для модели Payment с полями Stripe."""
 
-    course_title = serializers.CharField(source="course.title", read_only=True, default=None)
-    lesson_title = serializers.CharField(source="lesson.title", read_only=True, default=None)
+    course_title = serializers.CharField(
+        source="course.title",
+        read_only=True,
+        default=None,
+    )
+    lesson_title = serializers.CharField(
+        source="lesson.title",
+        read_only=True,
+        default=None,
+    )
 
     class Meta:
         model = Payment
@@ -98,27 +102,40 @@ class PaymentSerializer(serializers.ModelSerializer):
             "lesson_title",
             "amount",
             "payment_method",
+            "stripe_product_id",
+            "stripe_price_id",
+            "stripe_session_id",
+            "payment_url",
+            "status",
+        )
+        read_only_fields = (
+            "id",
+            "payment_date",
+            "user",
+            "stripe_product_id",
+            "stripe_price_id",
+            "stripe_session_id",
+            "payment_url",
+            "status",
         )
 
 
 class UserProfilePrivateSerializer(serializers.ModelSerializer):
-    """Приватный сериализатор для просмотра СВОЕГО профиля (с полной информацией)."""
+    """Приватный сериализатор для просмотра СВОЕГО профиля."""
 
-    # Вложенные платежи — только для своего профиля
     payments = PaymentSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
-        # Полная информация: С last_name и payments
         fields = (
             "id",
             "email",
             "first_name",
-            "last_name",  # ← Есть только в приватном сериализаторе
+            "last_name",
             "phone",
             "city",
             "avatar",
             "date_joined",
-            "payments",  # ← Есть только в приватном сериализаторе
+            "payments",
         )
         read_only_fields = ("id", "date_joined")

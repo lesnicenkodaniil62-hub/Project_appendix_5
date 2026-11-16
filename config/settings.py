@@ -147,3 +147,16 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+# ==============================================================================
+# STRIPE НАСТРОЙКИ
+# ==============================================================================
+# Замените 'sk_test_...' на ваш реальный тестовый ключ из Stripe Dashboard
+STRIPE_SECRET_KEY = os.getenv(
+    "STRIPE_SECRET_KEY",
+    "sk_test_ВАШ_ТЕСТОВЫЙ_КЛЮЧ_ЗДЕСЬ",
+)
+STRIPE_PUBLISHABLE_KEY = os.getenv(
+    "STRIPE_PUBLISHABLE_KEY",
+    "pk_test_ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ_ЗДЕСЬ",
+)
