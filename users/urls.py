@@ -2,7 +2,9 @@ from django.urls import URLPattern, URLResolver, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    PaymentCreateAPIView,
     PaymentListAPIView,
+    PaymentStatusAPIView,
     UserProfileAPIView,
     UserRegisterAPIView,
     UserUpdateAPIView,
@@ -17,6 +19,12 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("users/<int:pk>/profile/", UserProfileAPIView.as_view(), name="user-profile"),
     path("users/<int:pk>/update/", UserUpdateAPIView.as_view(), name="user-update"),
     path("payments/", PaymentListAPIView.as_view(), name="payment-list"),
+    path("payments/create/", PaymentCreateAPIView.as_view(), name="payment-create"),
+    path(
+        "payments/status/<str:session_id>/",
+        PaymentStatusAPIView.as_view(),
+        name="payment-status",
+    ),
 ]
 
 urlpatterns += router.urls

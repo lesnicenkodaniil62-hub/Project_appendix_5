@@ -25,7 +25,10 @@ class UserRegistrationTests(APITestCase):
 
     def test_register_user_duplicate_email(self):
         """Регистрация с существующим email возвращает ошибку."""
-        User.objects.create_user(email="existing@test.com", password="testpass123")
+        User.objects.create_user(  # type: ignore[call-arg]
+            email="existing@test.com",
+            password="testpass123",
+        )
         data = {
             "email": "existing@test.com",
             "password": "testpass123",
@@ -49,7 +52,7 @@ class JWTTokenTests(APITestCase):
     """Тесты JWT токенов."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
@@ -86,7 +89,7 @@ class UserCRUDTests(APITestCase):
     """Тесты CRUD операций для пользователей."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
             first_name="Тестовый",
@@ -109,13 +112,13 @@ class UserProfileTests(APITestCase):
     """Тесты профилей пользователей."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
             first_name="Тестовый",
             last_name="Пользователь",
         )
-        self.user2 = User.objects.create_user(
+        self.user2 = User.objects.create_user(  # type: ignore[call-arg]
             email="user2@test.com",
             password="testpass123",
             first_name="Второй",
@@ -161,7 +164,7 @@ class PaymentTests(APITestCase):
     """Тесты платежей."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
@@ -207,11 +210,11 @@ class CourseCRUDTests(APITestCase):
 
     def setUp(self):
         self.moderator_group = Group.objects.create(name="Модераторы")
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
-        self.moderator = User.objects.create_user(
+        self.moderator = User.objects.create_user(  # type: ignore[call-arg]
             email="moderator@test.com",
             password="testpass123",
         )
@@ -282,16 +285,16 @@ class LessonCRUDTests(APITestCase):
 
     def setUp(self):
         self.moderator_group = Group.objects.create(name="Модераторы")
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
-        self.moderator = User.objects.create_user(
+        self.moderator = User.objects.create_user(  # type: ignore[call-arg]
             email="moderator@test.com",
             password="testpass123",
         )
         self.moderator.groups.add(self.moderator_group)
-        self.user2 = User.objects.create_user(
+        self.user2 = User.objects.create_user(  # type: ignore[call-arg]
             email="user2@test.com",
             password="testpass123",
         )
@@ -366,7 +369,7 @@ class SubscriptionTests(APITestCase):
     """Тесты функционала подписки на курс."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
@@ -410,7 +413,7 @@ class YouTubeValidatorTests(APITestCase):
     """Тесты валидации YouTube URL."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
@@ -447,7 +450,7 @@ class PaginationTests(APITestCase):
     """Тесты пагинации."""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
             email="user@test.com",
             password="testpass123",
         )
@@ -476,3 +479,50 @@ class PaginationTests(APITestCase):
         response = self.client.get("/materials/courses/?page_size=5")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 5)
+
+
+class PaymentStatusTests(APITestCase):
+    """Тесты проверки статуса платежа через Stripe Session Retrieve."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(  # type: ignore[call-arg]
+            email="user@test.com",
+            password="testpass123",
+        )
+        self.course = Course.objects.create(
+            title="Тестовый курс",
+            description="Описание",
+            owner=self.user,
+        )
+        # Создаем платеж с тестовым session_id
+        self.payment = Payment.objects.create(
+            user=self.user,
+            course=self.course,
+            amount=1500.00,
+            payment_method="card",
+            stripe_session_id="cs_test_fake_session_id",
+            status="pending",
+        )
+
+    def test_get_payment_status_requires_auth(self):
+        """Неавторизованный пользователь не может проверить статус."""
+        response = self.client.get(f"/users/payments/status/{self.payment.stripe_session_id}/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_payment_status_not_found_for_other_user(self):
+        """Пользователь не может проверить статус чужого платежа."""
+        other_user = User.objects.create_user(email="other@test.com", password="testpass123")  # type: ignore[call-arg]
+        self.client.force_authenticate(user=other_user)
+        response = self.client.get(f"/users/payments/status/{self.payment.stripe_session_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_payment_status_handles_stripe_error(self):
+        """Эндпоинт корректно обрабатывает ошибку от Stripe (например, неверный ID)."""
+        self.client.force_authenticate(user=self.user)
+        # Тестовый ID "cs_test_fake_session_id" вызовет ошибку Stripe,
+        # которую наш код должен корректно перехватить и вернуть 400.
+        response = self.client.get(f"/users/payments/status/{self.payment.stripe_session_id}/")
+
+        # Проверяем, что ошибка обработана и возвращен 400 Bad Request
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
