@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,7 +18,6 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    # ДОБАВЛЕН ПАГИНАТОР
     pagination_class = MaterialsPagination
 
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -44,7 +45,6 @@ class LessonListCreateAPIView(generics.ListCreateAPIView):
 
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    # ДОБАВЛЕН ПАГИНАТОР
     pagination_class = MaterialsPagination
 
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -104,6 +104,27 @@ class SubscriptionAPIView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Управление подпиской на курс. Если подписка есть — удаляет её, если нет — создаёт.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["course_id"],
+            properties={
+                "course_id": openapi.Schema(
+                    type=openapi.TYPE_INTEGER, description="ID курса, на который нужно подписаться или отписаться"
+                )
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="Успешная операция",
+                examples={"application/json": {"message": "подписка добавлена"}},  # или "подписка удалена"
+            ),
+            400: openapi.Response(description="Не указан course_id в теле запроса"),
+            401: openapi.Response(description="Неавторизованный пользователь"),
+            404: openapi.Response(description="Курс с указанным ID не найден"),
+        },
+    )
     def post(self, request, *args, **kwargs):
         user = request.user
         course_id = request.data.get("course_id")
