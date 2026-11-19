@@ -137,7 +137,7 @@ SIMPLE_JWT = {
 # ==============================================================================
 # CORS НАСТРОЙКИ
 # ==============================================================================
-CORS_ALLOW_ALL_ORIGINS = True  # Для разработки разрешаем все источники
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
@@ -164,3 +164,38 @@ STRIPE_PUBLISHABLE_KEY = os.getenv(
     "STRIPE_PUBLISHABLE_KEY",
     "pk_test_ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ_ЗДЕСЬ",
 )
+
+
+# ==============================================================================
+# EMAIL НАСТРОЙКИ (Mail.ru SMTP)
+# ==============================================================================
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.mail.ru"
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+
+# ==============================================================================
+# CELERY НАСТРОЙКИ
+# ==============================================================================
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
+
+# Таймзона должна совпадать с TIME_ZONE проекта (Europe/Moscow)
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = False  # Используем локальное время, указанное в TIME_ZONE
+
+# Расписание периодических задач (Celery Beat)
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    # Тестовая задача для проверки работы планировщика
+    'test-celery-connection': {
+        'task': 'users.tasks.test_celery_connection',
+        'schedule': crontab(minute='*/1'),  # Запускать каждую минуту
+    },
+}

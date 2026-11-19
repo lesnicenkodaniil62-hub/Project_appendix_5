@@ -30,6 +30,13 @@ class Course(models.Model):
         verbose_name="Владелец",
         help_text="Пользователь, создавший курс",
     )
+    # НОВОЕ ПОЛЕ: автоматически обновляется при каждом сохранении объекта
+    # Нужно для проверки условия "< 4 часов" в Celery-задаче
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата последнего обновления",
+        help_text="Автоматически обновляется при изменении курса",
+    )
 
     class Meta:
         verbose_name = "Курс"

@@ -11,6 +11,7 @@ from users.permissions import IsModerator, IsNotModerator, IsOwner, IsOwnerOrMod
 from .models import Course, Lesson, Subscription
 from .paginators import MaterialsPagination
 from .serializers import CourseSerializer, LessonSerializer
+from .tasks import send_course_update_notification
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -38,6 +39,18 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    # ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДА ОБНОВЛЕНИЯ
+    def perform_update(self, serializer):
+        """
+        Вызов задачи на отправку сообщения происходит в контроллере обновления курса:
+        когда курс обновлен (serializer.save()), тем, кто подписан, отправляется письмо.
+        """
+        # 1. Сначала сохраняем изменения в БД (это также обновит поле updated_at)
+        instance = serializer.save()
+
+        # 2. Вызываем Celery-задачу асинхронно через .delay()
+        send_course_update_notification.delay(instance.id)
 
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
@@ -117,8 +130,7 @@ class SubscriptionAPIView(APIView):
         ),
         responses={
             200: openapi.Response(
-                description="Успешная операция",
-                examples={"application/json": {"message": "подписка добавлена"}},  # или "подписка удалена"
+                description="Успешная операция", examples={"application/json": {"message": "подписка добавлена"}}
             ),
             400: openapi.Response(description="Не указан course_id в теле запроса"),
             401: openapi.Response(description="Неавторизованный пользователь"),
