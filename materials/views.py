@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -11,6 +12,7 @@ from users.permissions import IsModerator, IsNotModerator, IsOwner, IsOwnerOrMod
 from .models import Course, Lesson, Subscription
 from .paginators import MaterialsPagination
 from .serializers import CourseSerializer, LessonSerializer
+from .tasks import send_course_update_notification  # Импортируем Celery-задачу
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -38,6 +40,17 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """
+        Вызов задачи на отправку сообщения происходит в контроллере обновления курса:
+        когда курс обновлен (serializer.save()), тем, кто подписан, отправляется письмо.
+        """
+        # 1. Сначала сохраняем изменения в БД (это также обновит поле updated_at)
+        instance = serializer.save()
+
+        # 2. Вызываем Celery-задачу асинхронно через .delay()
+        send_course_update_notification.delay(instance.id)
 
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
@@ -86,6 +99,25 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
+    # ДОБАВЛЕННЫЙ МЕТОД ДЛЯ ДОПОЛНИТЕЛЬНОГО ЗАДАНИЯ
+    def perform_update(self, serializer):
+        """
+        При обновлении урока:
+        1. Сохраняем изменения урока
+        2. Обновляем updated_at у курса (чтобы проверка < 4 часов работала корректно)
+        3. Вызываем задачу рассылки для курса
+        """
+        # 1. Сохраняем урок
+        instance = serializer.save()
+
+        # 2. Обновляем updated_at у курса
+        course = instance.course
+        course.updated_at = timezone.now()
+        course.save(update_fields=["updated_at"])
+
+        # 3. Вызываем задачу рассылки
+        send_course_update_notification.delay(course.id)
+
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     queryset = Lesson.objects.all()
@@ -117,8 +149,7 @@ class SubscriptionAPIView(APIView):
         ),
         responses={
             200: openapi.Response(
-                description="Успешная операция",
-                examples={"application/json": {"message": "подписка добавлена"}},  # или "подписка удалена"
+                description="Успешная операция", examples={"application/json": {"message": "подписка добавлена"}}
             ),
             400: openapi.Response(description="Не указан course_id в теле запроса"),
             401: openapi.Response(description="Неавторизованный пользователь"),

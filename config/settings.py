@@ -13,18 +13,24 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.getenv("DEBUG") == "True" else False
 
+# Добавлен 'testserver' для работы Django Test Client
 ALLOWED_HOSTS: list[str] = ["testserver", "127.0.0.1", "localhost"]
 
+# Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -76,6 +82,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# Database
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -87,6 +94,7 @@ DATABASES = {
     }
 }
 
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -94,21 +102,27 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Internationalization
 LANGUAGE_CODE = "ru-ru"
 TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Кастомная модель пользователя
 AUTH_USER_MODEL = "users.User"
 
+# Django REST Framework настройки
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -122,6 +136,7 @@ REST_FRAMEWORK = {
     ],
 }
 
+# JWT настройки
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -133,11 +148,10 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-
 # ==============================================================================
 # CORS НАСТРОЙКИ
 # ==============================================================================
-CORS_ALLOW_ALL_ORIGINS = True  # Для разработки разрешаем все источники
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
@@ -152,7 +166,6 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-
 # ==============================================================================
 # STRIPE НАСТРОЙКИ
 # ==============================================================================
@@ -164,3 +177,41 @@ STRIPE_PUBLISHABLE_KEY = os.getenv(
     "STRIPE_PUBLISHABLE_KEY",
     "pk_test_ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ_ЗДЕСЬ",
 )
+
+# ==============================================================================
+# EMAIL НАСТРОЙКИ (Mail.ru SMTP)
+# ==============================================================================
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.mail.ru"
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+# ==============================================================================
+# CELERY НАСТРОЙКИ
+# ==============================================================================
+# Настройки Redis вынесены в .env файл
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
+
+# Критерий: таймзона Celery совпадает с таймзоной проекта
+CELERY_TIMEZONE = TIME_ZONE  # "Europe/Moscow"
+CELERY_ENABLE_UTC = False  # Используем локальное время, указанное в TIME_ZONE
+
+
+CELERY_BEAT_SCHEDULE = {
+    # Тестовая задача для проверки работы планировщика
+    "test-celery-connection": {
+        "task": "users.tasks.test_celery_connection",
+        "schedule": crontab(minute="*/1"),  # Запускать каждую минуту
+    },
+    # ЗАДАНИЕ 3: блокировка неактивных пользователей
+    # Запускать каждый день в 3:00 ночи (по московскому времени)
+    "block-inactive-users": {
+        "task": "users.tasks.block_inactive_users",
+        "schedule": crontab(hour=3, minute=0),
+    },
+}
